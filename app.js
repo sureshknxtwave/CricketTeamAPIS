@@ -25,6 +25,7 @@ const initializeDBAndServer = async () => {
 }
 
 initializeDBAndServer()
+app.use(express.json())
 
 //GET METHOD
 
@@ -34,8 +35,8 @@ app.get('/players/', async (request, response) => {
         *
     FROM
         cricket_team
-    ORDERED BY
-        palyer_id;`
+    ORDER BY
+        player_id;`
 
   const playersArray = await db.all(getPlayersQuery)
   response.send(playersArray)
@@ -45,24 +46,24 @@ app.get('/players/', async (request, response) => {
 
 app.post('/players/', async (request, response) => {
   const playerDetails = request.body
+
   const {playerName, jerseyNumber, role} = playerDetails
 
   const addPlayersQuery = `
-    INSERT INTO
-        cricket_team
-        ( playerName,
-        jerseyNumber,
-        role)
-    VALUES
-        (
-            ${playerName},
-            ${jerseyNumber},
-            ${role},
-        );
-    `
+  INSERT INTO
+    cricket_team
+    (player_name, jersey_number, role)
+  VALUES
+    ('${playerName}', ${jerseyNumber}, '${role}');
+`
 
-  const dbResponse = await db.run(addPlayersQuery)
-  const playerId = dbResponse.lastId
+  const dbResponse = await db.run(
+    addPlayersQuery,
+    playerName,
+    jerseyNumber,
+    role,
+  )
+
   response.send('Player Added to Team')
 })
 
@@ -76,7 +77,7 @@ app.get('/players/:playerId/', async (request, response) => {
     FROM
         cricket_team
     WHERE 
-      player_id = ${playerId}`
+      player_id = ${playerId};`
 
   const playersArray = await db.all(getPlayersQuery)
   response.send(playersArray)
@@ -84,20 +85,23 @@ app.get('/players/:playerId/', async (request, response) => {
 
 //METHOD PUT
 
-app.put('//players/:playerId/', async (request, response) => {
+app.put('/players/:playerId/', async (request, response) => {
   const {playerId} = request.params
   const playerDetails = request.body
   const {playerName, jerseyNumber, role} = playerDetails
+
   const updatePlayerQuery = `
     UPDATE
       cricket_team
     SET
-          playerName = ${playerName},
-           jerseyNumber =  ${jerseyNumber},
-            role = ${role},
+      player_name = ?,
+      jersey_number = ?,
+      role = ?
     WHERE
-      player_id = ${playerId};`
-  await db.run(updatePlayerQuery)
+      player_id = ?;
+  `
+
+  await db.run(updatePlayerQuery, playerName, jerseyNumber, role, playerId)
   response.send('Player Details Updated')
 })
 
